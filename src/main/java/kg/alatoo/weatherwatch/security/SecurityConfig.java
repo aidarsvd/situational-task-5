@@ -35,6 +35,7 @@ import java.io.IOException;
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity
+
 public class SecurityConfig {
 
     private final UserService userService;

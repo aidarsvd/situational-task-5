@@ -33,17 +33,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
-                .map(u -> new AppUserDetails(
-                                u.getId(),
-                                u.getUsername(),
-                                u.getName(),
-                                u.getPassword(),
-                                u.getAuthorities().stream().map(a -> new AuthorityModel(a.getName(), a.getDescription())).toList(),
-                                u.getCreatedAt()
-                        )
-                )
+        UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException(username + " not found"));
+
+        List<AuthorityModel> authorities = user.getAuthorities().stream()
+                .map(a -> new AuthorityModel(a.getName(), a.getDescription())).toList();
+
+        return new AppUserDetails(
+                user.getId(),
+                user.getUsername(),
+                user.getName(),
+                user.getPassword(),
+                authorities,
+                user.getCreatedAt()
+        );
     }
 
     @Override
