@@ -1,10 +1,17 @@
 package kg.alatoo.weatherwatch.security;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import kg.alatoo.weatherwatch.dto.ErrorDto;
 import kg.alatoo.weatherwatch.services.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -14,12 +21,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+
+import java.io.IOException;
 
 @Configuration
 @EnableWebSecurity
@@ -55,8 +65,25 @@ public class SecurityConfig {
                 )
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
-                .httpBasic(httpBasicCustomizer -> httpBasicCustomizer.realmName("Your Realm"));
+                .httpBasic(httpBasicCustomizer -> httpBasicCustomizer.realmName("Your Realm"))
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint()));
         return http.build();
+    }
+
+    public static class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+        @Override
+        public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            ErrorDto errorDto = ErrorDto.builder()
+                    .statusCode(HttpStatus.UNAUTHORIZED.value())
+                    .message("Authentication is required!")
+                    .build();
+            ObjectMapper objectMapper = new ObjectMapper();
+            response.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            response.getWriter().write(objectMapper.writeValueAsString(errorDto));
+        }
     }
 
     private AuthenticationProvider authenticationProvider() {

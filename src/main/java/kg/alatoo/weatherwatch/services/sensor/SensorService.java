@@ -8,4 +8,5 @@ public interface SensorService {
 
     List<SensorDto> getAll();
 
+    SensorDto create(SensorDto dto);
 }
